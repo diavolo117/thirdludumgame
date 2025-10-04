@@ -281,11 +281,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 76823e9a22764fc4780b618f960ab82c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  enemies:
-  - prefab: {fileID: 3702577198126064337, guid: 689e64cf45ce13845988486efa1b7be0, type: 3}
-    cost: 4
+  enemyTypes:
   - prefab: {fileID: 3702577198126064337, guid: 5aed0ad2054d8b649b4def064f2362bb, type: 3}
-    cost: 1
+    cost: 2
+  - prefab: {fileID: 3702577198126064337, guid: 689e64cf45ce13845988486efa1b7be0, type: 3}
+    cost: 5
   spawnPoints:
   - {fileID: 1381163765}
   - {fileID: 1088455754}
@@ -294,7 +294,7 @@ MonoBehaviour:
   baseTarget: {fileID: 1751267114}
   wavePoints: 60
   spawnDelay: 0.01
-  waveInterval: 120
+  rewardPrefab: {fileID: 5645783863715148944, guid: a4122e0977189464c9eac4081db93247, type: 3}
 --- !u!4 &252950129
 Transform:
   m_ObjectHideFlags: 0

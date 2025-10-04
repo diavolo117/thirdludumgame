@@ -1,81 +1,82 @@
-using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 
-public class EnemySpawner : MonoBehaviour
+public class WaveManager : MonoBehaviour
 {
-    [Header("Spawn Settings")]
-    [SerializeField] private EnemyData[] enemies;
-    [SerializeField] private Transform[] spawnPoints;
-    [SerializeField] private Transform baseTarget;
-
-    [Header("Wave Settings")]
-    [SerializeField] private int wavePoints = 20;
-    [SerializeField] private float spawnDelay = 0.5f;
-    [SerializeField] private float waveInterval = 5f;
-
-    private bool spawningWave;
-
-    private void Start()
+    [System.Serializable]
+    public class EnemyType
     {
-        StartCoroutine(WaveRoutine());
+        public GameObject prefab;
+        public int cost;
     }
 
-    private IEnumerator WaveRoutine()
+    public List<EnemyType> enemyTypes;
+    public Transform[] spawnPoints;
+    public Transform baseTarget;
+
+    public int wavePoints = 10;
+    public float spawnDelay = 0.5f;
+    public GameObject rewardPrefab;
+
+    private List<GameObject> aliveEnemies = new List<GameObject>();
+    private bool waveActive = false;
+    private bool waitingForPickup = false;
+
+    void Start()
     {
-        while (true)
-        {
-            yield return StartCoroutine(SpawnWave());
-            yield return new WaitForSeconds(waveInterval);
-        }
+        StartCoroutine(StartWave());
     }
 
-    private IEnumerator SpawnWave()
+    IEnumerator StartWave()
     {
-        spawningWave = true;
-        int pointsLeft = wavePoints;
+        waveActive = true;
+        waitingForPickup = false;
 
-        Debug.Log("Wave started! Points: " + wavePoints);
-
-        while (pointsLeft > 0)
+        int points = wavePoints;
+        while (points > 0)
         {
-            // 1. выбираем случайного врага, которого можем себе "позволить"
-            EnemyData chosen = enemies[Random.Range(0, enemies.Length)];
-
-            if (chosen.cost > pointsLeft)
+            EnemyType e = enemyTypes[Random.Range(0, enemyTypes.Count)];
+            if (e.cost <= points)
             {
-                // Если враг слишком дорогой — пробуем другого
-                bool found = false;
-                foreach (var e in enemies)
-                {
-                    if (e.cost <= pointsLeft)
-                    {
-                        chosen = e;
-                        found = true;
-                        break;
-                    }
-                }
-
-                if (!found)
-                    break; // ни одного не можем заспавнить
+                Transform sp = spawnPoints[Random.Range(0, spawnPoints.Length)];
+                GameObject enemy = Instantiate(e.prefab, sp.position, Quaternion.identity);
+                enemy.GetComponent<EnemyController>().SetDefaultTarget(baseTarget);
+                aliveEnemies.Add(enemy);
+                points -= e.cost;
+                yield return new WaitForSeconds(spawnDelay);
             }
-
-            // 2. выбираем случайную точку спавна
-            Transform spawnPoint = spawnPoints[Random.Range(0, spawnPoints.Length)];
-
-            // 3. спавним врага
-            GameObject enemy = Instantiate(chosen.prefab, spawnPoint.position, Quaternion.identity);
-
-            // 4. если враг имеет EnemyController — задаем цель
-            EnemyController controller = enemy.GetComponent<EnemyController>();
-            if (controller != null && baseTarget != null)
-                controller.SetDefaultTarget(baseTarget);
-
-            pointsLeft -= chosen.cost;
-
-            yield return new WaitForSeconds(spawnDelay);
+            else break;
         }
 
-        Debug.Log("Wave finished!");
-        spawningWave = false;
+        // ждём, пока враги умрут
+        yield return new WaitUntil(() => aliveEnemies.TrueForAll(e => e == null));
+
+        waveActive = false;
+        SpawnReward();
+    }
+
+    void SpawnReward()
+    {
+        if (rewardPrefab != null)
+        {
+            Instantiate(rewardPrefab, Vector3.zero, Quaternion.identity);
+            waitingForPickup = true;
+        }
+    }
+
+    public void OnRewardDelivered()
+    {
+        if (!waitingForPickup) return;
+
+        waitingForPickup = false;
+        wavePoints += 5; // пример роста сложности
+        StartCoroutine(StartWave());
+    }
+
+    public void UnregisterEnemy(GameObject enemy)
+    {
+        if (aliveEnemies.Contains(enemy))
+            aliveEnemies.Remove(enemy);
     }
 }
