@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Enemyfirst
   - PlayerAttack
+  - Artifact
   layers:
   - Default
   - TransparentFX

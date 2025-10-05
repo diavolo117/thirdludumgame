@@ -1,10 +1,11 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class RewardItem : MonoBehaviour
 {
     private bool pickedUp = false;
     private Transform followTarget;
     private float followSpeed = 5f;
+    public int upgradeStage = 1; // от 1 до 6
 
     void Update()
     {
@@ -16,12 +17,28 @@ public class RewardItem : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (!pickedUp && other.CompareTag("Player"))
+        if (pickedUp) return;
+
+        if (other.CompareTag("Player"))
         {
             followTarget = other.transform;
             pickedUp = true;
+
+            PlayerController pc = other.GetComponent<PlayerController>();
+            if (pc != null)
+            {
+                pc.ApplyUpgrade(upgradeStage);
+            }
+
+            // 💥 отключаем коллайдер, чтобы база потом его поймала корректно
+            Collider2D col = GetComponent<Collider2D>();
+            if (col != null)
+                col.enabled = false;
+
+            Debug.Log($"Reward {upgradeStage} picked up and applied upgrade.");
         }
     }
+
 
     public bool IsPickedUp() => pickedUp;
 }
