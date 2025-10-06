@@ -20,6 +20,8 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private int maxHealth = 5;
     [SerializeField] private TMP_Text deathMessage;
     public int upgradeStage = 1; // от 1 до 6
+    [SerializeField] private float attackCooldown = 0.4f; // время между атаками
+    private float lastAttackTime = -999f;
 
     private int currentHealth;
     private bool isDead;
@@ -93,6 +95,13 @@ public class PlayerController : MonoBehaviour
         if (Input.GetMouseButtonDown(0) && !isAttacking && !isAstral && !isDashing)
             StartCoroutine(PerformAttack());
 
+
+
+
+        lastAttackTime = Time.time;
+
+        
+
         // --- дэш ---
         if (dashUnlocked && Input.GetMouseButtonDown(1) && !isAstral && Time.time - lastDashTime >= dashCooldown)
             StartCoroutine(PerformDash());
@@ -145,6 +154,7 @@ public class PlayerController : MonoBehaviour
         if (attackHitboxes.Length > 0 && attackHitboxes[attackType] != null)
             attackHitboxes[attackType].SetActive(false);
         isAttacking = false;
+
     }
 
     // ======================= ДЭШ =======================
@@ -207,6 +217,7 @@ public class PlayerController : MonoBehaviour
             astralOverlay.SetActive(false); // 🔵 выключаем PNG
 
         Debug.Log("Astral form ended");
+
     }
 
 
@@ -239,7 +250,7 @@ public class PlayerController : MonoBehaviour
     // ======================= ВАМПИРИЗМ =======================
     public void OnEnemyHit()
     {
-        if (vampirismUnlocked)
+        if (vampirismUnlocked = true)
             Heal(lifestealAmount);
     }
 
@@ -276,22 +287,32 @@ public class PlayerController : MonoBehaviour
         }
         Debug.Log("Player is dead!");
         enabled = false;
+        StartCoroutine(RestartLevel());
     }
 
     // ======================= ПРОГРЕССИЯ =======================
     // вызов из наград / базы
     public void ApplyUpgrade(int stage)
     {
-        switch (stage)
+        upgradeStage++;
+        switch (upgradeStage)
         {
-            case 1: Debug.Log("firstuply"); break;
-            case 2: Debug.Log("secstuply"); break;
-            case 3: Debug.Log("thirdstuply"); break;
-            case 4: vampirismUnlocked = true; break;
-            case 5: attackType = 1; break;
-            case 6: attackType = 2; break;
+            case 1: maxHealth -= 10; moveSpeed += 2; currentHealth += Mathf.Min(currentHealth + 30, maxHealth); break;
+            case 2: attackType = 1; dashUnlocked = true; maxHealth -= 10; currentHealth += Mathf.Min(currentHealth + 30, maxHealth);  invulnerabilityAfterHit -= 0.2f; break;
+            case 3: vampirismUnlocked = false; lifestealAmount -= 3; currentHealth += Mathf.Min(currentHealth + 20, maxHealth);
+                ; dashCooldown -= 0.5f; damagedeal += 2; dashDistance += 5; break;
+            case 4: maxHealth -= 10; moveSpeed += 5; currentHealth += Mathf.Min(currentHealth + 20, maxHealth); damagedeal += 1; break;
+            case 5: attackType = 2; maxHealth -= 10; moveSpeed += 4; currentHealth += Mathf.Min(currentHealth + 10, maxHealth); astralUnlocked = true; break;
+            case 6: maxHealth -= 5; damagedeal += 3; break;
         }
-        Debug.Log($"Upgrade {stage} applied!");
+        Debug.Log($"Upgrade {upgradeStage} applied!");
+    }
+    private IEnumerator RestartLevel()
+    {
+        yield return new WaitForSeconds(2f);
+        UnityEngine.SceneManagement.SceneManager.LoadScene(
+            UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex
+        );
     }
     // ======================= АГР ДЛЯ ВРАГОВ =======================
     public bool IsAstralActive()

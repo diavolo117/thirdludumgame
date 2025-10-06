@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using TMPro;
+using System.Collections;
 
 [RequireComponent(typeof(Collider2D))]
 public class MainBase : MonoBehaviour
@@ -47,7 +48,13 @@ public class MainBase : MonoBehaviour
         if (currentHealth <= 0)
             Die();
     }
-
+    private IEnumerator RestartLevel()
+    {
+        yield return new WaitForSeconds(2f);
+        UnityEngine.SceneManagement.SceneManager.LoadScene(
+            UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex
+        );
+    }
     private void Die()
     {
         isDestroyed = true;
@@ -58,7 +65,7 @@ public class MainBase : MonoBehaviour
             destroyedMessage.text = "BASE DESTROYED!";
             destroyedMessage.gameObject.SetActive(true);
         }
-
+        StartCoroutine(RestartLevel());
         // Тут можешь вызвать GameOver или перезагрузку
         // SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }

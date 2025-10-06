@@ -1,17 +1,20 @@
-using System.Collections;
+﻿using System.Collections;
 using TMPro;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D), typeof(Collider2D))]
-public class EnemyController : MonoBehaviour
+public class EnemyControllertank : MonoBehaviour
 {
     [Header("Movement")]
     [SerializeField] private float moveSpeed = 2f;
     [SerializeField] private float detectionRadius = 5f;
     [SerializeField] private float separationRadius = 1f;
     [SerializeField] private Transform defaultTarget;
-    [SerializeField] private float attackCooldown = 0.4f; // время между атаками
-    private float lastAttackTime = -999f;
+    private Vector2 currentDirection;
+    private Transform currentTarget;
+    private bool isKnockedBack = false;
+    private float knockbackTimer = 0f;
+    [SerializeField] private float knockbackDuration = 0.3f;
 
 
     [Header("Combat")]
@@ -23,58 +26,119 @@ public class EnemyController : MonoBehaviour
     private Transform player;
     private int currentHealth;
     private float lastDamageTime = -999f;
+    [Header("Tank Settings")]
+    [SerializeField] private float aoeRadius = 2.5f;
+    [SerializeField] private int aoeDamage = 1;
+    [SerializeField] private float aoeInterval = 4f;
+    [SerializeField] private LayerMask playerMask;
+    [SerializeField] private GameObject aoeEffect; // визуальный круг, если хочешь
     private bool recentlyHit = false;
     [SerializeField] private float hitCooldown = 0.2f; // задержка между получениями урона
 
+    private bool canAoe = true;
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         currentHealth = maxHealth;
         player = GameObject.FindGameObjectWithTag("Player")?.transform;
-        Debug.Log(player);
-        
+        currentTarget = defaultTarget;
 
     }
+    private IEnumerator AoeAttack()
+    {
+        canAoe = false;
+
+        if (aoeEffect != null)
+        {
+            aoeEffect.SetActive(true);
+            yield return new WaitForSeconds(0.3f);
+            aoeEffect.SetActive(false);
+        }
+
+        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, aoeRadius, playerMask);
+        foreach (var h in hits)
+        {
+            var ph = h.GetComponent<PlayerController>();
+            if (ph != null)
+                ph.TakeDamage(aoeDamage);
+        }
+
+        yield return new WaitForSeconds(aoeInterval);
+        canAoe = true;
+    }
+
+    private IEnumerator HitCooldown()
+    {
+        yield return new WaitForSeconds(hitCooldown);
+        recentlyHit = false;
+    }
+
     public void SetDefaultTarget(Transform target)
     {
         defaultTarget = target;
     }
-
-    private void FixedUpdate()
+    private void Update()
     {
+        // 🔵 Проверяем возможность АОЕ
+        if (canAoe)
+            StartCoroutine(AoeAttack());
+
+        // 🔴 Обновляем агро-цель
         if (player == null) return;
 
-        Vector2 targetPos = defaultTarget != null ? (Vector2)defaultTarget.position : (Vector2)transform.position;
-        float distToPlayer = Vector2.Distance(transform.position, player.position);
         var playerCtrl = player.GetComponent<PlayerController>();
-
-        // если игрок не в астрале, можно агриться
-        if (playerCtrl != null)
+        if (playerCtrl != null && !playerCtrl.IsAstralActive())
         {
-            Debug.Log($"{name}: Astral active = {playerCtrl.IsAstralActive()}");
-
-            if (distToPlayer <= detectionRadius)
-                targetPos = player.position;
+            float dist = Vector2.Distance(transform.position, player.position);
+            if (dist <= detectionRadius)
+            {
+                // Агримся на игрока
+                currentTarget = player;
+            }
+            else
+            {
+                // Возвращаемся к базе
+                currentTarget = defaultTarget;
+            }
         }
         else
         {
-            // сброс агро: просто идём к дефолтной цели
-            targetPos = defaultTarget != null ? (Vector2)defaultTarget.position : (Vector2)transform.position;
+            // Игрок в астрале → агро сбрасывается
+            currentTarget = defaultTarget;
+        }
+    }
+
+    private void FixedUpdate()
+    {
+        if (isKnockedBack)
+        {
+            knockbackTimer -= Time.fixedDeltaTime;
+            if (knockbackTimer <= 0f)
+            {
+                isKnockedBack = false;
+                rb.linearVelocity = Vector2.zero;
+            }
+            return;
         }
 
+        if (currentTarget == null) return;
 
-        Vector2 moveDir = (targetPos - (Vector2)transform.position).normalized;
-        moveDir += CalculateSeparation();
-        moveDir = moveDir.normalized;
+        // направление к цели
+        Vector2 dir = ((Vector2)currentTarget.position - (Vector2)transform.position).normalized;
+        dir += CalculateSeparation();
+        dir = dir.normalized;
 
-        //rb.linearVelocity = moveDir * moveSpeed; // <- исправлено: velocity, не linearVelocity
-        rb.AddForce(moveDir * moveSpeed, ForceMode2D.Force);
+        // движение
+        rb.linearVelocity = dir * moveSpeed;
+
+        // поворот
         if (rb.linearVelocity.sqrMagnitude > 0.01f)
         {
             float angle = Mathf.Atan2(rb.linearVelocity.y, rb.linearVelocity.x) * Mathf.Rad2Deg;
             rb.rotation = angle;
         }
     }
+
 
     private Vector2 CalculateSeparation()
     {
@@ -115,10 +179,13 @@ public class EnemyController : MonoBehaviour
         yield return new WaitForSeconds(0.8f);
         moveSpeed /= 0.1f;
     }
-    private IEnumerator HitCooldown()
+    private void Knockback(Vector2 sourcePosition, float strength)
     {
-        yield return new WaitForSeconds(hitCooldown);
-        recentlyHit = false;
+        Vector2 dir = (transform.position - (Vector3)sourcePosition).normalized;
+        rb.linearVelocity = Vector2.zero;
+        rb.AddForce(dir * strength, ForceMode2D.Impulse);
+        isKnockedBack = true;
+        knockbackTimer = knockbackDuration;
     }
 
     private void OnTriggerEnter2D(Collider2D other)
@@ -149,10 +216,9 @@ public class EnemyController : MonoBehaviour
         // Наносим урон игроку при контакте (с кулдауном)
         if (other.CompareTag("Player") || other.CompareTag("base"))
         {
-            Vector2 knock = transform.position - other.transform.position;
-            rb.AddForce(knock * knockstr, ForceMode2D.Impulse);
-            Debug.Log(knock * knockstr);
+            Knockback(other.transform.position, knockstr);
             StartCoroutine(slowburn());
+
             PlayerController ph = other.GetComponent<PlayerController>();
             if (ph == null && other.attachedRigidbody != null)
                 ph = other.attachedRigidbody.GetComponent<PlayerController>();
@@ -183,5 +249,7 @@ public class EnemyController : MonoBehaviour
         Gizmos.DrawWireSphere(transform.position, detectionRadius);
         Gizmos.color = Color.cyan;
         Gizmos.DrawWireSphere(transform.position, separationRadius);
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, aoeRadius);
     }
 }

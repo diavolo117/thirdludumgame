@@ -13,8 +13,8 @@ GameObject:
   - component: {fileID: 7219183965105373440}
   - component: {fileID: 5771932800833587155}
   - component: {fileID: -4655000410778711550}
-  m_Layer: 0
-  m_Name: reward 2
+  m_Layer: 5
+  m_Name: reward 5
   m_TagString: Artifact
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -78,9 +78,9 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_Sprite: {fileID: 7482667652216324306, guid: 75f5f34dc1b5347e0b8351032682f224, type: 3}
-  m_Color: {r: 0.990566, g: 0.90526074, b: 0.06074228, a: 1}
+  m_SortingOrder: 3
+  m_Sprite: {fileID: -785357832906162973, guid: ec21067b1759fc04b861c79603c6edd3, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -102,6 +102,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 964e85d692b471046a9b377a2ec27276, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  upgradeStage: 1
 --- !u!61 &5771932800833587155
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -139,8 +140,8 @@ BoxCollider2D:
   m_Offset: {x: 0, y: 0.21133333}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0.5, y: 0.28866667}
-    oldSize: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    oldSize: {x: 1.17, y: 2.87}
     newSize: {x: 1, y: 1}
     adaptiveTilingThreshold: 0.5
     drawMode: 0

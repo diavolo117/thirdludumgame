@@ -15,6 +15,13 @@ public class RewardItem : MonoBehaviour
         }
     }
 
+    private void Start()
+    {
+        Collider2D col = GetComponent<Collider2D>();
+        if (col != null)
+            col.enabled = true;
+    }
+
     private void OnTriggerEnter2D(Collider2D other)
     {
         if (pickedUp) return;
@@ -30,14 +37,11 @@ public class RewardItem : MonoBehaviour
                 pc.ApplyUpgrade(upgradeStage);
             }
 
-            // 💥 отключаем коллайдер, чтобы база потом его поймала корректно
-            Collider2D col = GetComponent<Collider2D>();
-            if (col != null)
-                col.enabled = false;
-
+            // Можно оставить коллайдер включенным — не мешает доставке
             Debug.Log($"Reward {upgradeStage} picked up and applied upgrade.");
         }
     }
+
 
 
     public bool IsPickedUp() => pickedUp;

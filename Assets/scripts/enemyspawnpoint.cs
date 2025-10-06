@@ -1,4 +1,4 @@
-using System.Collections;
+п»їusing System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
@@ -10,7 +10,7 @@ public class EnemyType
     public GameObject prefab;
     public int cost;
     [Range(0, 100)]
-    public int weight = 50; // для взвешенного выбора
+    public int weight = 50; // РґР»СЏ РІР·РІРµС€РµРЅРЅРѕРіРѕ РІС‹Р±РѕСЂР°
 }
 
 [System.Serializable]
@@ -18,8 +18,8 @@ public class WaveDefinition
 {
     public int pointBudget = 10;
     public float spawnDelay = 0.5f;
-    public bool requireAllDead = true; // если false — волна заканчивается по таймеру ниже
-    public float maxDuration = 999f; // если requireAllDead == false, то maxDuration завершит волну
+    public bool requireAllDead = true; // РµСЃР»Рё false вЂ” РІРѕР»РЅР° Р·Р°РєР°РЅС‡РёРІР°РµС‚СЃСЏ РїРѕ С‚Р°Р№РјРµСЂСѓ РЅРёР¶Рµ
+    public float maxDuration = 999f; // РµСЃР»Рё requireAllDead == false, С‚Рѕ maxDuration Р·Р°РІРµСЂС€РёС‚ РІРѕР»РЅСѓ
     public bool isBossWave = false;
 }
 
@@ -35,15 +35,15 @@ public class enemyspawnpoint : MonoBehaviour
     [Header("Spawn")]
     public Transform[] spawnPoints;
     public Transform baseTarget;
-    public Transform rewardSpawnPoint; // куда поместить награду
+    public Transform rewardSpawnPoint; // РєСѓРґР° РїРѕРјРµСЃС‚РёС‚СЊ РЅР°РіСЂР°РґСѓ
 
     [Header("General")]
     [Header("Reward Variants")]
     public GameObject[] rewardPrefabs;
 
     public GameObject poolParent;
-    public UnityEvent<int> OnWaveStarted; // передаём индекс волны
-    public UnityEvent<int> OnWaveFinished; // передаём индекс волны
+    public UnityEvent<int> OnWaveStarted; // РїРµСЂРµРґР°С‘Рј РёРЅРґРµРєСЃ РІРѕР»РЅС‹
+    public UnityEvent<int> OnWaveFinished; // РїРµСЂРµРґР°С‘Рј РёРЅРґРµРєСЃ РІРѕР»РЅС‹
 
     private List<GameObject> aliveEnemies = new List<GameObject>();
     private int currentWave = 0;
@@ -72,7 +72,7 @@ public class enemyspawnpoint : MonoBehaviour
         int points = def.pointBudget;
         float timer = 0f;
 
-        // Пока есть очки — спавним.
+        // РџРѕРєР° РµСЃС‚СЊ РѕС‡РєРё вЂ” СЃРїР°РІРЅРёРј.
         while (points > 0)
         {
             EnemyType e = PickWeightedEnemy(points);
@@ -83,25 +83,28 @@ public class enemyspawnpoint : MonoBehaviour
             var ec = enemy.GetComponent<EnemyController>();
             if (ec != null) ec.SetDefaultTarget(baseTarget);
 
+            var tank = enemy.GetComponent<EnemyControllertank>();
+            if (tank != null) tank.SetDefaultTarget(baseTarget);
+
             aliveEnemies.Add(enemy);
             points -= e.cost;
 
             yield return new WaitForSeconds(def.spawnDelay);
             timer += def.spawnDelay;
 
-            // защитный выход если длительность ограничена
+            // Р·Р°С‰РёС‚РЅС‹Р№ РІС‹С…РѕРґ РµСЃР»Рё РґР»РёС‚РµР»СЊРЅРѕСЃС‚СЊ РѕРіСЂР°РЅРёС‡РµРЅР°
             if (!def.requireAllDead && timer >= def.maxDuration) break;
         }
 
-        // Ждём окончания волны:
+        // Р–РґС‘Рј РѕРєРѕРЅС‡Р°РЅРёСЏ РІРѕР»РЅС‹:
         if (def.requireAllDead)
         {
-            // Ждём пока список живых врагов пуст
+            // Р–РґС‘Рј РїРѕРєР° СЃРїРёСЃРѕРє Р¶РёРІС‹С… РІСЂР°РіРѕРІ РїСѓСЃС‚
             yield return new WaitUntil(() => aliveEnemies.Count == 0);
         }
         else
         {
-            // Ждём либо пока все мертвы, либо пока не прошёл maxDuration
+            // Р–РґС‘Рј Р»РёР±Рѕ РїРѕРєР° РІСЃРµ РјРµСЂС‚РІС‹, Р»РёР±Рѕ РїРѕРєР° РЅРµ РїСЂРѕС€С‘Р» maxDuration
             float elapsed = 0f;
             while (elapsed < def.maxDuration && aliveEnemies.Count > 0)
             {
@@ -115,7 +118,7 @@ public class enemyspawnpoint : MonoBehaviour
         OnWaveFinished?.Invoke(waveIndex);
     }
 
-    // Взвешенный выбор врага, учитывая текущий бюджет
+    // Р’Р·РІРµС€РµРЅРЅС‹Р№ РІС‹Р±РѕСЂ РІСЂР°РіР°, СѓС‡РёС‚С‹РІР°СЏ С‚РµРєСѓС‰РёР№ Р±СЋРґР¶РµС‚
     EnemyType PickWeightedEnemy(int budget)
     {
         var candidates = enemyTypes.Where(e => e.cost <= budget).ToList();
@@ -136,22 +139,22 @@ public class enemyspawnpoint : MonoBehaviour
 
     void SpawnReward()
     {
-        // Если список пуст — заполняем его всеми префабами
+        // Р•СЃР»Рё СЃРїРёСЃРѕРє РїСѓСЃС‚ вЂ” Р·Р°РїРѕР»РЅСЏРµРј РµРіРѕ РІСЃРµРјРё РїСЂРµС„Р°Р±Р°РјРё
         if (unusedRewards.Count == 0)
         {
             unusedRewards = new List<GameObject>(rewardPrefabs);
-            // Если не хочешь повторов вообще, можешь закомментировать эту строку,
-            // тогда после 6-й награды больше ничего не выпадет.
+            // Р•СЃР»Рё РЅРµ С…РѕС‡РµС€СЊ РїРѕРІС‚РѕСЂРѕРІ РІРѕРѕР±С‰Рµ, РјРѕР¶РµС€СЊ Р·Р°РєРѕРјРјРµРЅС‚РёСЂРѕРІР°С‚СЊ СЌС‚Сѓ СЃС‚СЂРѕРєСѓ,
+            // С‚РѕРіРґР° РїРѕСЃР»Рµ 6-Р№ РЅР°РіСЂР°РґС‹ Р±РѕР»СЊС€Рµ РЅРёС‡РµРіРѕ РЅРµ РІС‹РїР°РґРµС‚.
         }
 
-        // Берём случайный индекс из оставшихся наград
+        // Р‘РµСЂС‘Рј СЃР»СѓС‡Р°Р№РЅС‹Р№ РёРЅРґРµРєСЃ РёР· РѕСЃС‚Р°РІС€РёС…СЃСЏ РЅР°РіСЂР°Рґ
         int index = Random.Range(0, unusedRewards.Count);
         GameObject prefab = unusedRewards[index];
 
-        // Удаляем выбранную награду из списка, чтобы не повторялась
+        // РЈРґР°Р»СЏРµРј РІС‹Р±СЂР°РЅРЅСѓСЋ РЅР°РіСЂР°РґСѓ РёР· СЃРїРёСЃРєР°, С‡С‚РѕР±С‹ РЅРµ РїРѕРІС‚РѕСЂСЏР»Р°СЃСЊ
         unusedRewards.RemoveAt(index);
 
-        // Спавним награду
+        // РЎРїР°РІРЅРёРј РЅР°РіСЂР°РґСѓ
         Vector3 spawnPos = rewardSpawnPoint ? rewardSpawnPoint.position : Vector3.zero;
         Instantiate(prefab, spawnPos, Quaternion.identity);
         waitingForPickup = true;
@@ -161,26 +164,34 @@ public class enemyspawnpoint : MonoBehaviour
 
 
 
-    // Вызывается врагом в OnDestroy/OnDeath, чтобы корректно удалить из списка
+    // Р’С‹Р·С‹РІР°РµС‚СЃСЏ РІСЂР°РіРѕРј РІ OnDestroy/OnDeath, С‡С‚РѕР±С‹ РєРѕСЂСЂРµРєС‚РЅРѕ СѓРґР°Р»РёС‚СЊ РёР· СЃРїРёСЃРєР°
     public void UnregisterEnemy(GameObject enemy)
     {
         if (aliveEnemies.Contains(enemy))
             aliveEnemies.Remove(enemy);
     }
 
-    // Вызывать при доставке награды (например, игрок поднимает и приносит)
+    // Р’С‹Р·С‹РІР°С‚СЊ РїСЂРё РґРѕСЃС‚Р°РІРєРµ РЅР°РіСЂР°РґС‹ (РЅР°РїСЂРёРјРµСЂ, РёРіСЂРѕРє РїРѕРґРЅРёРјР°РµС‚ Рё РїСЂРёРЅРѕСЃРёС‚)
     public void OnRewardDelivered()
     {
         if (!waitingForPickup) return;
         waitingForPickup = false;
 
-        // увеличиваем индекс волны, но не выходим за границы
+        // СѓРІРµР»РёС‡РёРІР°РµРј РёРЅРґРµРєСЃ РІРѕР»РЅС‹, РЅРѕ РЅРµ РІС‹С…РѕРґРёРј Р·Р° РіСЂР°РЅРёС†С‹
         currentWave++;
         if (currentWave >= waves.Count)
         {
-            // можно зацикливать или увеличивать сложность и повторять
-            currentWave = waves.Count - 1; // пока держим последнюю волной
+            Debug.Log("рџЋ‰ РџРѕР±РµРґР°! Р’СЃРµ РІРѕР»РЅС‹ РїСЂРѕР№РґРµРЅС‹!");
+            StartCoroutine(LoadVictoryScreen());
+            return;
         }
-        StartNextWave();
+        else
+            StartNextWave();
+    }
+    private IEnumerator LoadVictoryScreen()
+    {
+        // РјРѕР¶РЅРѕ РІСЃС‚Р°РІРёС‚СЊ СЌС„С„РµРєС‚ Р·Р°РґРµСЂР¶РєРё / Р°РЅРёРјР°С†РёСЋ
+        yield return new WaitForSeconds(2f);
+        UnityEngine.SceneManagement.SceneManager.LoadScene("VictoryScene");
     }
 }
